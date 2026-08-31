@@ -1,0 +1,27 @@
+{
+  "broker": {
+    "name": "Sample Broking Ltd",
+    "address": "42 Demo Street, Bengaluru 560001",
+    "sebi_regn": "INZ000000000 (sample)"
+  },
+  "note_no": "CN-20260831-CL0001",
+  "trade_date": "31 Aug 2026",
+  "settlement": "T+1",
+  "generated_at": "31 Aug 2026 18:30 IST",
+  "client": { "id": "CL0001", "name": "Aarav Sharma", "email": "CL0001@example.com" },
+  "trades": [
+    { "order_no": "1100234567", "time": "09:22:14", "exchange": "NSE", "side": "B", "symbol": "RELIANCE", "qty": 40, "price": "2,981.55", "value": "1,19,262.00" },
+    { "order_no": "1100234912", "time": "10:47:03", "exchange": "BSE", "side": "S", "symbol": "TCS", "qty": 12, "price": "4,102.10", "value": "49,225.20" },
+    { "order_no": "1100235406", "time": "13:05:41", "exchange": "NSE", "side": "B", "symbol": "INFY", "qty": 85, "price": "1,644.30", "value": "1,39,765.50" }
+  ],
+  "summary": {
+    "gross": "3,08,252.70",
+    "brokerage": "60.00",
+    "txn_charges": "10.63",
+    "stt": "77.06",
+    "gst": "12.71",
+    "other": "15.31",
+    "net": "2,09,978.01",
+    "net_side": "payable"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "sender": {
+    "name": "Priya Raman",
+    "address": ["14 Lakeview Road", "Bengaluru 560001", "priya@example.com"]
+  },
+  "recipient": {
+    "name": "The Registrar, City University",
+    "address": ["University Campus", "Bengaluru 560056"]
+  },
+  "date": "31 August 2026",
+  "subject": "Request for official transcript",
+  "salutation": "Dear Sir or Madam,",
+  "body": [
+    "I am writing to request an official copy of my academic transcript for the M.Sc. programme completed in 2024, enrolment number MS2022-1187.",
+    "The transcript is required for an overseas application with a deadline of 30 September 2026. I would be grateful if it could be issued at the earliest convenience; the applicable fee has been paid online, receipt enclosed.",
+    "Please let me know if any further documentation is needed."
+  ],
+  "closing": "Yours faithfully,"
+}

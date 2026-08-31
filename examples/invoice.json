@@ -1,0 +1,24 @@
+{
+  "currency": "$",
+  "invoice_no": "INV-2026-0042",
+  "date": "31 Aug 2026",
+  "due_date": "14 Sep 2026",
+  "seller": {
+    "name": "Acme Consulting LLC",
+    "address": ["1 Infinite Loop", "Cupertino, CA 95014", "billing@acme.example"]
+  },
+  "buyer": {
+    "name": "Globex Corporation",
+    "address": ["742 Evergreen Terrace", "Springfield, OR 97477"]
+  },
+  "items": [
+    { "description": "Discovery workshop (2 days)", "qty": 1, "unit_price": "2,400.00", "amount": "2,400.00" },
+    { "description": "Backend development", "qty": 32, "unit_price": "150.00", "amount": "4,800.00" },
+    { "description": "Deployment & handover", "qty": 6, "unit_price": "150.00", "amount": "900.00" }
+  ],
+  "subtotal": "8,100.00",
+  "tax_rate": "8.5%",
+  "tax": "688.50",
+  "total": "8,788.50",
+  "notes": "Payment by wire transfer within 14 days. Reference the invoice number on all payments."
+}

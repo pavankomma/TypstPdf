@@ -1,9 +1,6 @@
-// Contract note template — the Typst equivalent of Zerodha's move from
-// HTML→Chrome→PDF, to LaTeX, to Typst. Typst compiles even huge
-// trade tables in a fraction of LaTeX's time, from a single binary.
-//
-// The build harness drops a per-client `data.json` next to this file
-// and runs `typst compile`.
+// Contract note template (equity trades, Indian-broker style).
+// Input schema: see examples/contract_note.json.
+// The service drops the request body next to this file as data.json.
 
 #let d = json("data.json")
 

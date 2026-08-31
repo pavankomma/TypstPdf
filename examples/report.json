@@ -1,0 +1,34 @@
+{
+  "title": "Q3 Platform Reliability Report",
+  "subtitle": "Infrastructure & SRE",
+  "author": "Platform Team",
+  "date": "31 Aug 2026",
+  "metrics": [
+    { "label": "Uptime", "value": "99.97%" },
+    { "label": "Incidents", "value": "3" },
+    { "label": "MTTR", "value": "18 min" },
+    { "label": "Deploys", "value": "214" }
+  ],
+  "sections": [
+    {
+      "heading": "Summary",
+      "body": [
+        "The platform met its availability target for the third consecutive quarter. Three incidents occurred, all resolved within the error budget, and none were customer-visible for more than five minutes.",
+        "Deployment frequency increased 22% quarter over quarter following the rollout of the new CI pipeline."
+      ]
+    },
+    {
+      "heading": "Incidents",
+      "body": [
+        "Two incidents were caused by a shared dependency on the legacy session store; its replacement is scheduled for Q4. The third was a cloud-provider network event outside our control.",
+        "Post-incident reviews were completed within five working days in all cases."
+      ]
+    },
+    {
+      "heading": "Next quarter",
+      "body": [
+        "Priorities are the session-store migration, enabling multi-region failover for the API tier, and reducing p99 latency on the search endpoint below 300 ms."
+      ]
+    }
+  ]
+}

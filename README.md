@@ -1,57 +1,86 @@
-# contract-notes-pipeline
+# TypstPdf
 
-A miniature, runnable homage to Zerodha's [*1.5 million PDFs in 25 minutes*](https://zerodha.tech/blog/1-5-million-pdfs-in-25-minutes/) — the nightly workflow that generates, digitally signs, and emails a contract note to every customer who traded that day.
-
-This sample reproduces the **architecture** at toy scale: a Redis-brokered job queue, per-stage worker pools, Typst PDF generation, a signing stage, an email stage, and an S3-style object store as the handoff layer between stages.
+An HTTP PDF-generation service powered by [Typst](https://typst.app). POST a JSON
+document, pick a template, get a PDF back.
 
 ```
-CSV trades ──▶ [generate] Typst → PDF ──▶ [sign] ──▶ [email] .eml outbox
-                    │                        │            │
-                    └──── object store (0-9 prefix partitioned) ────┘
-                              ▲ Redis carries the jobs between stages
+POST /render/invoice  { ...json... }  ──▶  typst compile  ──▶  application/pdf
 ```
 
-## How each piece maps to the real stack
-
-| This sample | Zerodha production |
-|---|---|
-| `internal/queue` — Redis list per stage, JSON jobs | [Tasqueue](https://github.com/kalbhor/tasqueue) + Redis broker/state |
-| Goroutine worker pools in one process | ~40 ephemeral EC2 instances scheduled by Nomad, provisioned by Terraform, driven by Rundeck |
-| `internal/gen` — `typst compile` per client in a temp dir | Typst (after outgrowing HTML→Chrome, then LaTeX) |
-| `internal/store` — local dirs `0/`–`9/` sharding keys | S3 with ten fixed key prefixes to 10× the per-prefix rate limits |
-| `internal/sign` — SHA-256 trailer appended after `%%EOF` | [jpdfsigner](https://github.com/zerodha/jpdfsigner): Java + OpenPDF HTTP service doing real PKCS#7 signatures |
-| `internal/mail` — RFC 5322 `.eml` files in an outbox dir | Self-hosted Haraka SMTP cluster + [smtppool](https://github.com/knadh/smtppool) |
+Templates are plain `.typ` files in `templates/`; adding a document type means
+dropping in one file — no code changes.
 
 ## Prerequisites
 
 - Go 1.22+
-- [Typst](https://github.com/typst/typst/releases) on `$PATH`
-- Redis running locally (`redis-server --daemonize yes`)
+- [Typst](https://github.com/typst/typst/releases) on `PATH` (Windows: `winget install Typst.Typst`)
 
 ## Run it
 
 ```sh
-# 1. Fabricate the "exchange files": 200 clients, ~1.2k trades
-go run ./cmd/pipeline seed -clients 200
-
-# 2. Run the pipeline: 8 generate / 4 sign / 4 email workers
-go run ./cmd/pipeline run -gen 8 -sign 4 -mail 4
+go run ./cmd/server
 ```
 
-Output lands in:
+Flags:
 
-- `out/objectstore/<0-9>/pdfs/` — generated contract notes
-- `out/objectstore/<0-9>/signed/` — "signed" copies (digest trailer)
-- `out/outbox/*.eml` — MIME emails with the signed PDF attached
+| Flag | Default | |
+|---|---|---|
+| `-addr` | `:8080` | listen address |
+| `-templates` | `templates` | directory of `.typ` templates |
+| `-typst` | `typst` | path to the typst executable |
+| `-concurrency` | NumCPU | max concurrent typst compiles |
+| `-timeout` | `30s` | per-compile timeout |
 
-On a modest machine 200 notes take ~30s end to end; scale `-clients` and worker counts to taste. The generate pool dominates CPU, which is exactly why Zerodha gives PDF generation its own big-instance worker pool.
+## API
 
-## Things worth reading in the code
+| Endpoint | |
+|---|---|
+| `GET /healthz` | service + typst version check |
+| `GET /templates` | lists available template names |
+| `POST /render/{template}` | JSON body in, PDF out (`?filename=x.pdf` to name the download) |
 
-- `templates/contract_note.typ` — the whole document is ~100 lines of Typst; compare with what the same table would cost in LaTeX or headless Chrome.
-- `internal/store/store.go` — the prefix-partitioning trick, in ten lines.
-- `cmd/pipeline/main.go` — the `pool()` helper: each stage drains its own queue and enqueues into the next, so stages overlap instead of running serially.
+```sh
+curl -s http://localhost:8080/templates
+# {"templates":["contract_note","invoice","letter","report"]}
 
-## Not production
+curl -s -X POST --data-binary @examples/invoice.json \
+  http://localhost:8080/render/invoice -o invoice.pdf
+```
 
-The signer is a mock (real signing needs a certificate and PKCS#7), emails stop at the outbox, there are no retries/idempotency keys, and Redis isn't clustered. Each of those has a clear seam in the code where the real thing would plug in.
+Errors come back as JSON: `404` unknown template, `400` invalid JSON body,
+`422` with typst's diagnostics when the data doesn't fit the template,
+`504` on compile timeout.
+
+## Templates
+
+Each template is a self-contained Typst file that reads its input with
+`json("data.json")` — the service writes the request body next to a copy of the
+template in a scratch dir and runs `typst compile` there. Bundled templates,
+each with a matching sample payload in `examples/`:
+
+- `invoice` — line items, totals, tax, notes
+- `report` — title block, metric tiles, sections
+- `letter` — formal letter with sender/recipient blocks
+- `contract_note` — equity trade contract note (Indian-broker style)
+
+To add your own: write `templates/mydoc.typ` starting with
+`#let d = json("data.json")` and it is immediately available at
+`POST /render/mydoc`. Money/number fields are passed pre-formatted strings so
+the caller controls locale and grouping.
+
+## Design notes
+
+- `internal/render` bounds concurrent `typst compile` processes with a
+  semaphore (`-concurrency`), since compiles are CPU-bound.
+- Each render runs in its own temp dir and is cleaned up afterwards, so
+  concurrent requests can't see each other's data.
+- Template names are validated against `[A-Za-z0-9._-]+`, so requests can't
+  escape the templates directory.
+
+## Lineage
+
+This repo started as a toy reproduction of Zerodha's
+[*1.5 million PDFs in 25 minutes*](https://zerodha.tech/blog/1-5-million-pdfs-in-25-minutes/)
+pipeline (Redis queue, signing and email stages). It has been repurposed into a
+general-purpose Typst rendering service; the contract-note template survives
+from that era.
