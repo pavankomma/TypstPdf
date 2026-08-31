@@ -1,0 +1,27 @@
+{
+  "name": "typstpdf-designer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "TypstPdf template designer. Builds into dist/, embedded into the server binary via go:embed.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --build && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --build"
+  },
+  "dependencies": {
+    "@codemirror/lang-json": "^6.0.2",
+    "codemirror": "^6.0.2",
+    "pinia": "^2.2.6",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/tsconfig": "^0.7.0",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10"
+  }
+}

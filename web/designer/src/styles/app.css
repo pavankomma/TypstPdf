@@ -1,0 +1,264 @@
+/* Designer application layer. Tokens come from doclerk.css; this file
+   adds the semantic roles + the workspace layout. Components carry no
+   styles of their own (EasyScan convention). */
+
+:root {
+  --rail: 230px;
+  --topbar: 52px;
+
+  /* ---- semantic roles --------------------------------------------------
+     -100 is the pastel wash for surfaces, the base is for marks and
+     borders, -700 is the pastel text step. Use them in that order. */
+  --color-success: #4A9058;
+  --color-success-100: var(--p-green-bg);
+  --color-success-700: var(--p-green-txt);
+
+  --color-danger: #C9453F;
+  --color-danger-100: var(--p-red-bg);
+  --color-danger-700: var(--p-red-txt);
+
+  --color-warning: #C98F12;
+  --color-warning-100: var(--p-yellow-bg);
+  --color-warning-700: var(--p-yellow-txt);
+
+  --color-info: var(--brand);
+  --color-info-100: var(--p-blue-bg);
+  --color-info-700: var(--p-blue-txt);
+}
+
+html, body { height: 100%; overflow: hidden; }
+body { font-size: 13.5px; }
+#app { display: flex; flex-direction: column; height: 100%; }
+
+/* ---- top bar ---------------------------------------------------------- */
+.topbar {
+  height: var(--topbar);
+  flex: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.topbar .nav { height: 100%; padding-block: 0; }
+.topbar .tag { margin-left: var(--space-2); }
+
+/* ---- workspace grid ---------------------------------------------------- */
+.workspace { flex: 1; display: flex; min-height: 0; }
+
+.rail {
+  width: var(--rail);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  min-height: 0;
+}
+.rail-head {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+}
+.rail-list { flex: 1; overflow-y: auto; padding: 0 var(--space-2) var(--space-2); }
+.rail-item {
+  display: flex; align-items: center; gap: var(--space-2);
+  width: 100%;
+  padding: 7px var(--space-2);
+  border: 0; border-radius: var(--radius-md);
+  background: transparent; color: var(--ink-2);
+  font: inherit; font-weight: 600; text-align: left;
+  cursor: pointer;
+}
+.rail-item:hover { background: var(--surface-2); }
+.rail-item.on { background: var(--p-blue-bg); color: var(--p-blue-txt); }
+.rail-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-item .ver { font-family: var(--font-mono); font-size: 10px; color: var(--muted-2); }
+.rail-new { padding: var(--space-2); border-top: 1px solid var(--border); display: grid; gap: var(--space-2); }
+
+/* ---- editor + preview panes ------------------------------------------- */
+.panes { flex: 1; display: flex; min-width: 0; }
+.pane { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.pane + .pane { border-left: 1px solid var(--border); }
+
+/* Draggable editor/preview split (default 60/40, persisted). */
+.divider {
+  flex: none; width: 6px; margin-left: -1px;
+  cursor: col-resize;
+  border-left: 1px solid var(--border);
+  background: transparent;
+  transition: background 120ms;
+}
+.divider:hover, .divider:active { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+
+.rail-toggle { padding-inline: var(--space-2); font-weight: 700; color: var(--muted-2); }
+.rail-head .rail-toggle { margin-left: auto; }
+
+.pane-head {
+  height: 48px; flex: none;
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  min-width: 0;
+}
+.pane-head .seg { flex: none; }
+.pane-head .spacer { flex: 1; }
+
+/* Compact select for the preview data source. */
+.select-compact { width: auto; padding-block: 5px; font-size: 12.5px; color: var(--muted); }
+
+/* ---- CodeMirror editor ------------------------------------------------ */
+.editor { flex: 1; display: flex; min-height: 0; }
+.code-editor { flex: 1; min-width: 0; display: flex; }
+.code-editor .cm-editor { flex: 1; min-width: 0; background: var(--surface); }
+.code-editor .cm-editor.cm-focused { outline: none; box-shadow: inset 2px 0 0 var(--brand); }
+.code-editor .cm-scroller {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  padding-block: var(--space-2);
+}
+.code-editor .cm-gutters {
+  background: var(--surface);
+  color: var(--muted-3);
+  border-right: 1px solid var(--border-sub);
+  padding-inline: 4px;
+}
+.code-editor .cm-activeLine { background: var(--surface-2); }
+.code-editor .cm-activeLineGutter { background: var(--surface-2); color: var(--muted); }
+.code-editor .cm-selectionBackground { background: color-mix(in srgb, var(--brand) 18%, transparent) !important; }
+.code-editor .cm-cursor { border-left-color: var(--ink); }
+.code-editor .cm-tooltip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+.code-editor .cm-tooltip-autocomplete ul li { padding: 3px 8px; font-size: 12.5px; }
+.code-editor .cm-tooltip-autocomplete ul li[aria-selected] { background: var(--p-blue-bg); color: var(--p-blue-txt); }
+.code-editor .cm-completionDetail { color: var(--muted-2); font-style: normal; margin-left: 8px; }
+/* token colors come from the HighlightStyle in src/editor/typst.ts */
+
+/* ---- preview stage ----------------------------------------------------- */
+/* Slim status strip above the stage: render stats + export actions. */
+.stage-bar {
+  height: 34px; flex: none;
+  display: flex; align-items: center; gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.stage-bar .stats { font-size: 11.5px; color: var(--muted-2); font-family: var(--font-mono); }
+.stage-bar .spacer { flex: 1; }
+.stage-bar .btn { font-size: 12px; height: 26px; padding-inline: var(--space-2); }
+
+/* The stage sits one step below the ground so each page's own white edge
+   reads as the sheet boundary (EasyScan viewer convention). stage-wrap
+   pins the floating widgets over the scrollable stage. */
+.stage-wrap { flex: 1; min-height: 0; position: relative; display: flex; }
+.stage-wrap .stage { flex: 1; }
+.stage { flex: 1; min-height: 0; background: var(--surface-3); position: relative; }
+.stage embed, .stage iframe { display: block; width: 100%; height: 100%; border: 0; }
+.stage.paper { overflow: auto; cursor: grab; user-select: none; }
+.stage.paper.panning { cursor: grabbing; }
+.sheets {
+  display: flex; flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-4);
+  min-width: max-content;
+}
+.sheet {
+  display: block;
+  width: min(96%, 1000px);
+  height: auto;
+  margin-inline: auto;
+  background: #fff;
+  box-shadow: var(--shadow-lg);
+  border-radius: 2px;
+}
+
+/* Floating zoom widget (Mermaid-Live style), bottom-right of the stage. */
+.zoom-widget {
+  position: absolute;
+  bottom: var(--space-3); right: var(--space-4);
+  display: inline-flex; align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.zoom-widget .btn { border-radius: 0; height: 30px; padding-inline: var(--space-2); }
+.zoom-widget .zoom-label { min-width: 48px; font-size: 12px; font-family: var(--font-mono); }
+
+/* Jump-to-line action over the diagnostics wash. */
+.diag-jump { position: absolute; top: var(--space-3); right: var(--space-3); }
+
+/* Key-audit chip is a button. */
+.key-audit { cursor: pointer; border: 0; font: inherit; font-size: 11px; font-weight: 700; }
+
+/* ---- page setup form (header/footer configuration) --------------------- */
+.page-form {
+  flex: 1; overflow-y: auto;
+  padding: var(--space-6);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  max-width: 520px;
+  background: var(--surface);
+}
+.page-form h6 { margin: var(--space-2) 0 0; }
+.page-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.page-form-hint {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-100);
+  color: var(--color-warning-700);
+  display: grid; gap: var(--space-2); justify-items: start;
+}
+.page-form-hint p { margin: 0; font-size: 12.5px; }
+.page-form-note { font-size: 12px; margin: var(--space-2) 0 0; }
+.page-form .tag { justify-self: start; align-self: start; }
+.stage-empty {
+  position: absolute; inset: 0;
+  display: grid; place-content: center; gap: var(--space-2);
+  text-align: center; color: var(--muted-2);
+}
+
+/* Compile diagnostics: a danger wash panel over the stage. */
+.diag {
+  position: absolute; inset: 0;
+  margin: 0; padding: var(--space-4);
+  overflow: auto;
+  background: var(--color-danger-100);
+  color: var(--color-danger-700);
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Danger button variant (EasyScan app-layer convention). */
+.btn-danger { color: var(--color-danger-700); }
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-100);
+  border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+  color: var(--color-danger-700);
+}
+
+/* Unsaved-changes dot on the Save button. */
+.dirty-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--color-warning);
+  flex: none;
+}
+
+/* ---- jobs view --------------------------------------------------------- */
+.page { flex: 1; overflow-y: auto; padding: var(--space-6); }
+.page-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.page-head h2 { margin: 0; flex: 1; }
+.jobs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.table .mono-cell { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.table .err-cell { color: var(--color-danger-700); font-size: 12px; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- key dialog (native <dialog>) -------------------------------------- */
+/* doclerk's .dialog sets display:flex for the div-based fallback, which
+   would override the UA's hidden state on a CLOSED native <dialog> —
+   restore it. */
+dialog.dialog:not([open]) { display: none; }
+dialog.dialog { border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+dialog.dialog::backdrop { background: rgba(17, 17, 17, 0.35); }

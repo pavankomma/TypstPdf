@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# TypstPdf runtime state (SQLite DB, artifacts, signing key)
+data/
+
+# Designer SPA build inputs (dist/ IS committed for node-less builds)
+web/designer/node_modules/

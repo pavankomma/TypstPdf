@@ -35,6 +35,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -61,6 +62,9 @@ var ErrInvalidName = errors.New("invalid template name")
 // underscore — no separators, so no absolute paths and no traversal on any
 // OS), then an explicit ".." check as defense-in-depth. Kept as a pure
 // function so the guard is unit-tested and can't silently regress.
+// ValidateTemplateName exposes the guard for the designer's save path.
+func ValidateTemplateName(name string) error { return validateTemplateName(name) }
+
 func validateTemplateName(name string) error {
 	if name == "" || !nameRe.MatchString(name) || strings.Contains(name, "..") {
 		return fmt.Errorf("%w %q", ErrInvalidName, name)
@@ -193,15 +197,14 @@ func (r *Renderer) Render(ctx context.Context, template string, data []byte) (*R
 	if err := validateTemplateName(template); err != nil {
 		return nil, err
 	}
-	tpl, err := os.ReadFile(filepath.Join(r.TemplatesDir, template+".typ"))
-	if err != nil {
+	if _, err := os.Stat(filepath.Join(r.TemplatesDir, template+".typ")); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, fmt.Errorf("unknown template %q: %w", template, os.ErrNotExist)
 		}
 		return nil, err
 	}
 
-	data, err = r.applyDefaults(template, data)
+	data, err := r.applyDefaults(template, data)
 	if err != nil {
 		return nil, err
 	}
@@ -213,18 +216,11 @@ func (r *Renderer) Render(ctx context.Context, template string, data []byte) (*R
 		return nil, ctx.Err()
 	}
 
-	dir, err := os.MkdirTemp("", "typstpdf-")
+	dir, err := r.stageScratch(data)
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(dir)
-
-	if err := os.WriteFile(filepath.Join(dir, "data.json"), data, 0o644); err != nil {
-		return nil, err
-	}
-	if err := os.WriteFile(filepath.Join(dir, "main.typ"), tpl, 0o644); err != nil {
-		return nil, err
-	}
 
 	if r.Timeout > 0 {
 		var cancel context.CancelFunc
@@ -232,7 +228,7 @@ func (r *Renderer) Render(ctx context.Context, template string, data []byte) (*R
 		defer cancel()
 	}
 
-	pdf, err := r.compile(ctx, dir, template, r.PDFStandard)
+	pdf, err := r.compile(ctx, dir, template+".typ", template, r.PDFStandard)
 	fallback := false
 	if err != nil {
 		var ce *CompileError
@@ -242,7 +238,7 @@ func (r *Renderer) Render(ctx context.Context, template string, data []byte) (*R
 		// still ships and the gap is logged. If the baseline render fails
 		// too, the original (data) error is the one that matters.
 		if r.PDFStandard != "" && errors.As(err, &ce) {
-			if pdf2, err2 := r.compile(ctx, dir, template, ""); err2 == nil {
+			if pdf2, err2 := r.compile(ctx, dir, template+".typ", template, ""); err2 == nil {
 				log.Printf(
 					"ARCHIVAL FALLBACK: template %s failed PDF/%s conformance; served baseline PDF — re-render locally for diagnostics",
 					template, r.PDFStandard,
@@ -261,9 +257,171 @@ func (r *Renderer) Render(ctx context.Context, template string, data []byte) (*R
 	return &Result{PDF: pdf, Sha256: sha256.Sum256(pdf), ArchivalFallback: fallback}, nil
 }
 
-// compile runs one `typst compile` in the prepared scratch dir.
-func (r *Renderer) compile(ctx context.Context, dir, template, pdfStandard string) ([]byte, error) {
-	args := []string{"compile", "main.typ", "out.pdf"}
+// RenderSource compiles an in-memory template source (not a file from the
+// templates dir) against the given JSON document — the template designer's
+// preview path, so edits render before they are saved. It runs through the
+// same scratch-dir pipeline, fonts, PDF standard, and output validation as
+// Render. data is used verbatim: the caller applies any defaults merge.
+func (r *Renderer) RenderSource(ctx context.Context, source, data []byte) (*Result, error) {
+	select {
+	case r.sem <- struct{}{}:
+		defer func() { <-r.sem }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	dir, err := r.stageScratch(data)
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+
+	if err := os.WriteFile(filepath.Join(dir, previewMain), source, 0o644); err != nil {
+		return nil, err
+	}
+
+	if r.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, r.Timeout)
+		defer cancel()
+	}
+	pdf, err := r.compile(ctx, dir, previewMain, "(designer preview)", r.PDFStandard)
+	fallback := false
+	if err != nil {
+		var ce *CompileError
+		if r.PDFStandard != "" && errors.As(err, &ce) {
+			if pdf2, err2 := r.compile(ctx, dir, previewMain, "(designer preview)", ""); err2 == nil {
+				pdf, err, fallback = pdf2, nil, true
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := validatePDFBytes(pdf); err != nil {
+		return nil, err
+	}
+	return &Result{PDF: pdf, Sha256: sha256.Sum256(pdf), ArchivalFallback: fallback}, nil
+}
+
+// RenderSourceSVG compiles an in-memory source to per-page SVGs — the
+// designer's lightweight inline preview (no PDF viewer chrome). Typst's
+// SVG export outlines text to paths, so the pages are self-contained.
+// Page files use the zero-padded {0p} placeholder so lexical order is
+// page order.
+func (r *Renderer) RenderSourceSVG(ctx context.Context, source, data []byte) ([]string, error) {
+	select {
+	case r.sem <- struct{}{}:
+		defer func() { <-r.sem }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	dir, err := r.stageScratch(data)
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+
+	if err := os.WriteFile(filepath.Join(dir, previewMain), source, 0o644); err != nil {
+		return nil, err
+	}
+
+	if r.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, r.Timeout)
+		defer cancel()
+	}
+	args := []string{"compile", previewMain, "page-{0p}.svg", "--format", "svg"}
+	if !r.SystemFonts {
+		args = append(args, "--ignore-system-fonts")
+	}
+	if r.FontsDir != "" {
+		args = append(args, "--font-path", r.FontsDir)
+	}
+	cmd := exec.CommandContext(ctx, r.TypstBin, args...)
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("typst svg preview: %w", ctx.Err())
+		}
+		return nil, &CompileError{Template: "(designer preview)", Output: scrubScratchDir(string(out), dir)}
+	}
+
+	files, err := filepath.Glob(filepath.Join(dir, "page-*.svg"))
+	if err != nil {
+		return nil, err
+	}
+	if len(files) == 0 {
+		return nil, errors.New("svg preview produced no pages")
+	}
+	slices.Sort(files) // zero-padded page numbers → lexical order is page order
+	pages := make([]string, 0, len(files))
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			return nil, err
+		}
+		pages = append(pages, string(b))
+	}
+	return pages, nil
+}
+
+// previewMain is the scratch filename for the designer's unsaved source.
+// It sits beside the copied templates, so `#import "components/..."`
+// resolves for previews exactly as it does for saved templates.
+const previewMain = "__preview__.typ"
+
+// stageScratch builds the per-render scratch dir: a copy of the templates
+// tree — so templates can `#import "components/..."` shared partials
+// (letterheads, footers, tokens) while renders stay isolated — plus the
+// request's data.json at the root.
+func (r *Renderer) stageScratch(data []byte) (string, error) {
+	dir, err := os.MkdirTemp("", "typstpdf-")
+	if err != nil {
+		return "", err
+	}
+	if err := copyTree(r.TemplatesDir, dir); err != nil {
+		os.RemoveAll(dir)
+		return "", fmt.Errorf("stage templates: %w", err)
+	}
+	if len(data) == 0 {
+		data = []byte("{}")
+	}
+	if err := os.WriteFile(filepath.Join(dir, "data.json"), data, 0o644); err != nil {
+		os.RemoveAll(dir)
+		return "", err
+	}
+	return dir, nil
+}
+
+// copyTree copies the templates tree (files + subdirs) into dst.
+func copyTree(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil || rel == "." {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, b, 0o644)
+	})
+}
+
+// compile runs one `typst compile` in the prepared scratch dir. mainFile
+// is the entry .typ within the scratch tree; template names the render in
+// errors.
+func (r *Renderer) compile(ctx context.Context, dir, mainFile, template, pdfStandard string) ([]byte, error) {
+	args := []string{"compile", mainFile, "out.pdf"}
 	if !r.SystemFonts {
 		// Determinism: the same request must render the same PDF on every
 		// host. Typst's embedded fonts (Libertinus, New Computer Modern,
@@ -282,7 +440,7 @@ func (r *Renderer) compile(ctx context.Context, dir, template, pdfStandard strin
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("typst compile %s: %w", template, ctx.Err())
 		}
-		return nil, &CompileError{Template: template, Output: string(out)}
+		return nil, &CompileError{Template: template, Output: scrubScratchDir(string(out), dir)}
 	}
 	return os.ReadFile(filepath.Join(dir, "out.pdf"))
 }
@@ -303,6 +461,12 @@ func (r *Renderer) applyDefaults(template string, body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("template %s defaults: %w", template, err)
 	}
 	return merged, nil
+}
+
+// MergeDefaults exposes the defaults merge for callers that hold the
+// defaults themselves (the template designer previews unsaved defaults).
+func MergeDefaults(defaults, body []byte) ([]byte, error) {
+	return mergeDefaults(defaults, body)
 }
 
 // mergeDefaults overlays the request JSON onto the defaults JSON.
@@ -338,6 +502,16 @@ func deepMerge(dst, src map[string]any) {
 		}
 		dst[k] = v
 	}
+}
+
+// scrubScratchDir removes the per-request temp dir from typst diagnostics
+// so callers see "main.typ:3:1", not the host's temp path (noise in the
+// designer UI, and a needless environment leak in API responses). Windows
+// paths may carry the \\?\ long-path prefix.
+func scrubScratchDir(output, dir string) string {
+	sep := string(os.PathSeparator)
+	output = strings.ReplaceAll(output, `\\?\`+dir+sep, "")
+	return strings.ReplaceAll(output, dir+sep, "")
 }
 
 // validatePDFBytes asserts the render output is a plausible PDF (magic

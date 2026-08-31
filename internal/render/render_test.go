@@ -244,6 +244,77 @@ func TestRenderPDFAStandard(t *testing.T) {
 	}
 }
 
+func TestRenderSourceCompilesInMemoryTemplates(t *testing.T) {
+	// The designer preview path: raw source + data, never touching the
+	// templates dir.
+	r := newTestRenderer(t, "")
+	src := []byte(`#let d = json("data.json")
+= Hello #d.name`)
+	res, err := r.RenderSource(context.Background(), src, []byte(`{"name":"Designer"}`))
+	if err != nil {
+		t.Fatalf("in-memory source should render: %v", err)
+	}
+	assertIsPDF(t, res.PDF)
+
+	// A compile error surfaces as CompileError with diagnostics.
+	_, err = r.RenderSource(context.Background(), []byte(`#missing_variable`), nil)
+	var ce *CompileError
+	if !errors.As(err, &ce) || ce.Output == "" {
+		t.Fatalf("broken source should be a CompileError with diagnostics, got %v", err)
+	}
+}
+
+func TestRenderResolvesSharedComponents(t *testing.T) {
+	// The staged scratch tree carries components/, so templates (and
+	// unsaved designer previews) can import shared partials — here the
+	// branded page chrome driven by d.page.
+	r := newTestRenderer(t, "")
+	src := []byte(`#let d = json("data.json")
+#import "components/page.typ": branded
+#show: branded.with(d)
+= Branded document`)
+	data := []byte(`{"page":{"header_left":"ACME Corp","header_right":"Confidential",` +
+		`"footer_left":"typstpdf","page_numbers":true}}`)
+	res, err := r.RenderSource(context.Background(), src, data)
+	if err != nil {
+		t.Fatalf("component import should resolve in the scratch tree: %v", err)
+	}
+	assertIsPDF(t, res.PDF)
+
+	// No page object at all still renders (every key is optional).
+	res, err = r.RenderSource(context.Background(), src, nil)
+	if err != nil {
+		t.Fatalf("branded page must tolerate a missing page object: %v", err)
+	}
+	assertIsPDF(t, res.PDF)
+}
+
+func TestRenderSourceSVGReturnsPerPageMarkup(t *testing.T) {
+	r := newTestRenderer(t, "")
+	src := []byte(`#set page(paper: "a4")
+= Page one
+#pagebreak()
+= Page two`)
+	pages, err := r.RenderSourceSVG(context.Background(), src, nil)
+	if err != nil {
+		t.Fatalf("svg preview should render: %v", err)
+	}
+	if len(pages) != 2 {
+		t.Fatalf("expected 2 svg pages, got %d", len(pages))
+	}
+	for i, p := range pages {
+		if !strings.Contains(p, "<svg") {
+			t.Fatalf("page %d should be svg markup, got: %.60s", i+1, p)
+		}
+	}
+
+	_, err = r.RenderSourceSVG(context.Background(), []byte(`#broken_var`), nil)
+	var ce *CompileError
+	if !errors.As(err, &ce) {
+		t.Fatalf("broken svg preview should be a CompileError, got %v", err)
+	}
+}
+
 func TestRenderUnknownTemplateIsNotFound(t *testing.T) {
 	r := newTestRenderer(t, "")
 	_, err := r.Render(context.Background(), "no_such_template", []byte(`{}`))

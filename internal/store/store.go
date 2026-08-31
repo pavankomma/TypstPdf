@@ -313,7 +313,9 @@ type Artifact struct {
 	Signature        string
 }
 
-func newJobID() (string, error) {
+// NewJobID mints a 32-hex random job ID. Exported so the sync render
+// path can name the artifact file after the job before inserting the row.
+func NewJobID() (string, error) {
 	raw := make([]byte, 16)
 	if _, err := rand.Read(raw); err != nil {
 		return "", err
@@ -356,7 +358,7 @@ func scanJob(r rowScanner) (*Job, error) {
 
 // Enqueue records a new queued render job and returns it.
 func (s *Store) Enqueue(apiKeyID int64, template string, data []byte, filename string, maxAttempts int) (*Job, error) {
-	id, err := newJobID()
+	id, err := NewJobID()
 	if err != nil {
 		return nil, err
 	}
@@ -378,12 +380,15 @@ func (s *Store) Enqueue(apiKeyID int64, template string, data []byte, filename s
 }
 
 // RecordSyncJob writes an already-finished job row for the inline /render
-// path, so synchronous renders land in the same audit trail. artifact is
-// nil for a failed render; errMsg is "" for a successful one.
-func (s *Store) RecordSyncJob(apiKeyID int64, template string, data []byte, filename string, artifact *Artifact, errMsg string) (*Job, error) {
-	id, err := newJobID()
-	if err != nil {
-		return nil, err
+// path, so synchronous renders land in the same audit trail. id may be ""
+// to mint one; artifact is nil for a failed render; errMsg is "" for a
+// successful one.
+func (s *Store) RecordSyncJob(id string, apiKeyID int64, template string, data []byte, filename string, artifact *Artifact, errMsg string) (*Job, error) {
+	if id == "" {
+		var err error
+		if id, err = NewJobID(); err != nil {
+			return nil, err
+		}
 	}
 	sum := sha256.Sum256(data)
 	now := ts(time.Now())
@@ -393,7 +398,7 @@ func (s *Store) RecordSyncJob(apiKeyID int64, template string, data []byte, file
 		a = &Artifact{}
 		status = StatusFailed
 	}
-	_, err = s.db.Exec(`INSERT INTO jobs
+	_, err := s.db.Exec(`INSERT INTO jobs
 		(id, api_key_id, template, template_version, data, data_sha256, filename,
 		 status, attempts, max_attempts, error, pdf_path, pdf_sha256, pdf_bytes,
 		 pdf_standard, archival_fallback, signature, sync, created_at, started_at, finished_at)

@@ -1,0 +1,388 @@
+/*
+  Doclerk — design-system tokens and component classes.
+
+  Ported from the Doclerk website stylesheet (assets/css/styles.css): one typeface (Nunito) for
+  everything, JetBrains Mono for identifiers, a warm off-white ground, hairline borders, and a single
+  blue → teal brand gradient reserved for the primary action. Status is carried by five pastel
+  pairs — each a wash for the ground and a deep step for the text on it — so a state never rests on
+  a 6px dot changing hue.
+
+  The upstream sheet is written for a marketing page. What is kept here is its tokens and its
+  component grammar (buttons, tags, inputs, kbd, faux window); the page sections (hero, proof strip,
+  footer) are not. Two additions the site does not need but an application does:
+
+  1. Alias tokens. The workspace and dashboard layers were written against `--color-*`,
+     `--space-*`, `--radius-*` and `--shadow-*` names. They resolve to Doclerk values here so the
+     application layer reads as one system without a rename sweep through every component.
+  2. Tonal ramps for the neutral and brand hues, since a document workspace needs more than the
+     three surfaces and three muted steps a landing page gets by on.
+
+  Fonts are vendored in fonts.css rather than @imported — see the note there.
+*/
+
+/* ── tokens ── */
+:root {
+  /* surfaces */
+  --canvas:      #FBFBFA;
+  --surface:     #FFFFFF;
+  --surface-2:   #F7F6F3;
+  --surface-3:   #F0EFEC;
+  /* borders */
+  --border:      #EAEAEA;
+  --border-sub:  rgba(0, 0, 0, 0.06);
+  --border-med:  rgba(0, 0, 0, 0.12);
+  /* text */
+  --ink:         #111111;
+  --ink-2:       #2F3437;
+  --muted:       #787774;
+  --muted-2:     #9B9A97;
+  --muted-3:     #C7C6C2;
+  /* brand */
+  --brand:       #2B7BB0;
+  --brand-2:     #29A0A0;
+  --brand-grad:  linear-gradient(135deg, #2B7BB0 0%, #29A0A0 100%);
+  /* pastels — wash / text */
+  --p-green-bg:  #EDF3EC; --p-green-txt:  #346538;
+  --p-blue-bg:   #E1F3FE; --p-blue-txt:   #1F6C9F;
+  --p-yellow-bg: #FBF3DB; --p-yellow-txt: #956400;
+  --p-red-bg:    #FDEBEC; --p-red-txt:    #9F2F2D;
+  --p-purple-bg: #F3F0FE; --p-purple-txt: #5B3FAD;
+
+  /* type */
+  --font-body:    'Nunito', 'Helvetica Neue', system-ui, sans-serif;
+  --font-heading: 'Nunito', 'Helvetica Neue', system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* ── ramps ─────────────────────────────────────────────────────────────── */
+  /* Neutral: the site's three surfaces and three muted steps, filled in between. Warm throughout —
+     the greys lean yellow, never blue, so they sit under the brand blue rather than fight it. */
+  --color-neutral-100: #FBFBFA;
+  --color-neutral-200: #F7F6F3;
+  --color-neutral-300: #F0EFEC;
+  --color-neutral-400: #E3E2DE;
+  --color-neutral-500: #C7C6C2;
+  --color-neutral-600: #9B9A97;
+  --color-neutral-700: #787774;
+  --color-neutral-800: #2F3437;
+  --color-neutral-900: #111111;
+
+  /* Brand blue: -100 is the blue pastel wash, -600 the brand itself, -700 the pastel text step. */
+  --color-accent-100: #E1F3FE;
+  --color-accent-200: #C5E6F9;
+  --color-accent-300: #A2D2F0;
+  --color-accent-400: #78B7DF;
+  --color-accent-500: #4C98C8;
+  --color-accent-600: #2B7BB0;
+  --color-accent-700: #1F6C9F;
+  --color-accent-800: #18547B;
+  --color-accent-900: #103A55;
+
+  /* Brand teal. */
+  --color-accent-2-100: #E2F5F5;
+  --color-accent-2-200: #C3EAEA;
+  --color-accent-2-300: #9BDADA;
+  --color-accent-2-400: #6DC3C3;
+  --color-accent-2-500: #45AFAF;
+  --color-accent-2-600: #29A0A0;
+  --color-accent-2-700: #1E7F7F;
+  --color-accent-2-800: #175F5F;
+  --color-accent-2-900: #104242;
+
+  /* ── aliases consumed by the application layer ──────────────────────── */
+  --color-bg:       var(--canvas);
+  --color-surface:  var(--surface);
+  --color-text:     var(--ink-2);
+  --color-accent:   var(--brand);
+  --color-accent-2: var(--brand-2);
+  --color-divider:  var(--border);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+
+  /* Elevation is barely there on Doclerk: a 4% ambient at most. The one exception is the page on
+     the viewer stage, which has to lift off the ground, and that uses --shadow-lg. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* ── reset & base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 var(--space-2);
+}
+
+h1 { font-size: 34px; letter-spacing: -0.025em; }
+h2 { font-size: 26px; }
+h3 { font-size: 20px; }
+h4 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+h5 { font-size: 14px; font-weight: 700; letter-spacing: 0; }
+h6 { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+p { margin: 0 0 var(--space-3); }
+a { color: var(--brand); text-decoration: none; }
+a:hover { color: var(--color-accent-700); }
+img { display: block; max-width: 100%; }
+figure { margin: 0; }
+figcaption { font-size: 11px; margin-top: var(--space-1); color: var(--muted); }
+
+code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+
+.text-muted { color: var(--muted); }
+
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--radius-sm); }
+::selection { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+
+/* ── eyebrow — the site's section label; the app uses it for every panel heading ── */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── rules ── */
+.hr { height: 1px; border: 0; margin: var(--space-4) 0; background: var(--border); }
+
+/* ── buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13.5px;
+  line-height: 1.2;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 7px 14px;
+  transition: color .15s, border-color .15s, background .15s, opacity .15s, box-shadow .15s;
+}
+
+.btn svg { display: block; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: scale(0.98); }
+
+/* The gradient is reserved for the primary action, exactly as on the site. */
+.btn-primary {
+  background: var(--brand-grad);
+  color: #fff;
+  font-weight: 700;
+  border-color: transparent;
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+.btn-secondary { border-color: var(--border); color: var(--muted); background: var(--surface); }
+.btn-secondary:hover:not(:disabled) { color: var(--ink); background: var(--surface-2); border-color: var(--border-med); }
+.btn-secondary:active:not(:disabled) { background: var(--surface-3); }
+
+.btn-ghost { color: var(--muted); padding-inline: var(--space-2); }
+.btn-ghost:hover:not(:disabled) { color: var(--ink); background: var(--surface-2); }
+.btn-ghost:active:not(:disabled) { background: var(--surface-3); }
+
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+.btn-block { width: 100%; margin-top: var(--space-2); }
+
+/* ── forms ── */
+.field > label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
+
+.input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  caret-color: var(--brand);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.input::placeholder { color: var(--muted-2); }
+.input:hover { border-color: var(--border-med); }
+.input:focus-visible {
+  border-color: var(--brand);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+textarea.input { min-height: 90px; resize: vertical; }
+
+.radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; }
+.radio input, .seg-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.radio .dot { width: 16px; height: 16px; flex: none; border-radius: 50%; border: 1.5px solid var(--border-med); background: var(--surface); }
+.radio:hover .dot { border-color: var(--brand); }
+.radio input:checked + .dot { border-color: var(--brand); background: var(--brand); box-shadow: inset 0 0 0 4px var(--surface); }
+.radio input:focus-visible + .dot { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* Segmented control — one bordered pill, the active option filled in ink. */
+.seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.seg-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.seg-opt + .seg-opt { border-left: 1px solid var(--border); }
+.seg-opt:has(input:checked) { background: var(--ink); color: #fff; }
+.seg-opt:not(:has(input:checked)):hover { color: var(--ink); background: var(--surface-2); }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+/* ── cards ── */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+.card-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.card-title { font-weight: 700; font-size: 15px; line-height: 1.25; color: var(--ink); }
+.card-body { margin: 0; font-size: 13px; color: var(--muted); flex: 1; }
+.card-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted-2); }
+
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.elev-lg { box-shadow: var(--shadow-lg); }
+
+/* ── tags / status pills ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tag-green  { background: var(--p-green-bg);  color: var(--p-green-txt); }
+.tag-blue   { background: var(--p-blue-bg);   color: var(--p-blue-txt); }
+.tag-yellow { background: var(--p-yellow-bg); color: var(--p-yellow-txt); }
+.tag-red    { background: var(--p-red-bg);    color: var(--p-red-txt); }
+.tag-purple { background: var(--p-purple-bg); color: var(--p-purple-txt); }
+.tag-mono   { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+/* Names the workspace layer inherited. */
+.tag-accent  { background: var(--p-blue-bg); color: var(--p-blue-txt); }
+.tag-neutral { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+.tag-outline { border: 1px solid var(--brand); color: var(--brand); }
+
+/* ── navigation ── */
+.nav { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); }
+.nav-brand { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--ink); margin-right: auto; }
+.nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; font-weight: 600; }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current='page'] { color: var(--brand); }
+
+/* ── tables ── */
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); color: var(--ink-2); }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr:hover td { background: var(--canvas); }
+
+/* ── dialog (div-based; the app uses the native <dialog>, styled in app.css) ── */
+.dialog-backdrop {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  padding: var(--space-4);
+  background: rgba(17, 17, 17, 0.45);
+}
+.dialog {
+  width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-4); border-radius: var(--radius-xl);
+  background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+}
+.dialog-title { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--ink); }
+.dialog-body { font-size: 13.5px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+
+/* ── kbd keys ── */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  font-style: normal;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+/* ── faux-OS window chrome ── */
+.faux-window { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; }
+.faux-bar { background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 9px 16px; display: flex; align-items: center; gap: 10px; }
+.faux-dots { display: flex; gap: 5px; flex-shrink: 0; }
+.faux-dots span { width: 9px; height: 9px; border-radius: 50%; background: #DDDCDB; }
+.faux-title { font-family: var(--font-mono); font-size: 10px; color: var(--muted-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.faux-body { padding: 14px; }
+
+/* ── brand gradient text utility ── */
+.brand-text {
+  background: var(--brand-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

@@ -253,7 +253,7 @@ func TestRecordSyncJob(t *testing.T) {
 	s := newTestStore(t)
 	keyID, _ := newTestKey(t, s, "ci", nil)
 
-	ok, err := s.RecordSyncJob(keyID, "invoice", []byte(`{}`), "x.pdf",
+	ok, err := s.RecordSyncJob("", keyID, "invoice", []byte(`{}`), "x.pdf",
 		&Artifact{TemplateVersion: "v1", PDFPath: "p", PDFSha256: "ff", PDFBytes: 9}, "")
 	if err != nil {
 		t.Fatal(err)
@@ -262,7 +262,7 @@ func TestRecordSyncJob(t *testing.T) {
 		t.Fatalf("unexpected sync job: %+v", ok)
 	}
 
-	bad, err := s.RecordSyncJob(keyID, "invoice", []byte(`{}`), "", nil, "compile exploded")
+	bad, err := s.RecordSyncJob("", keyID, "invoice", []byte(`{}`), "", nil, "compile exploded")
 	if err != nil {
 		t.Fatal(err)
 	}
