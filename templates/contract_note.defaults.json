@@ -1,0 +1,19 @@
+{
+  "note_no": "—",
+  "trade_date": "—",
+  "settlement": "—",
+  "generated_at": "—",
+  "broker": { "name": "—", "address": "—", "sebi_regn": "—" },
+  "client": { "name": "—", "id": "—", "email": "—" },
+  "trades": [],
+  "summary": {
+    "gross": "—",
+    "brokerage": "—",
+    "txn_charges": "—",
+    "stt": "—",
+    "gst": "—",
+    "other": "—",
+    "net_side": "payable",
+    "net": "—"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "currency": "$",
+  "invoice_no": "—",
+  "date": "—",
+  "due_date": "—",
+  "seller": { "name": "—", "address": [] },
+  "buyer": { "name": "—", "address": [] },
+  "items": [],
+  "subtotal": "—",
+  "tax_rate": "—",
+  "tax": "—",
+  "total": "—",
+  "notes": null
+}

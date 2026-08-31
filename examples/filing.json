@@ -1,0 +1,40 @@
+{
+  "title": "Operating Agreement of Example Ventures LLC",
+  "footer": "Example Ventures LLC — Operating Agreement",
+  "header": {
+    "organization": "Example Ventures LLC",
+    "subtitle": "A Limited Liability Company",
+    "fields": [
+      { "label": "Document", "value": "OA-2026-01" },
+      { "label": "Effective", "value": "2026-09-01" }
+    ]
+  },
+  "articles": [
+    {
+      "heading": "Formation",
+      "intro": "The members hereby form a limited liability company under the laws of the state named below.",
+      "fields": [
+        { "label": "Company name", "value": "Example Ventures LLC" },
+        { "label": "State", "value": "Delaware" },
+        { "label": "Registered agent", "value": "Corporate Agents Inc." }
+      ]
+    },
+    {
+      "heading": "Purpose",
+      "body": [
+        "The company may engage in any lawful business activity for which limited liability companies may be organized.",
+        "The company shall have all powers necessary or convenient to conduct such business."
+      ]
+    },
+    {
+      "heading": "Capital Contributions",
+      "body": [
+        "Each member shall contribute the amounts set forth in Schedule A, which is incorporated by reference."
+      ]
+    }
+  ],
+  "execution": {
+    "statement": "IN WITNESS WHEREOF, the undersigned has executed this Agreement as of the effective date above.",
+    "signatory": "Jordan Lee, Managing Member"
+  }
+}

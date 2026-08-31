@@ -1,0 +1,17 @@
+{
+  "issuer": {
+    "name": "Acme Institute of Technology",
+    "subtitle": "Department of Continuing Education"
+  },
+  "title": "Certificate of Completion",
+  "body": "This is to certify that",
+  "subject": "Priya Sharma",
+  "subject_note": "Enrollment No. CE-2026-0142",
+  "statement": "has successfully completed the twelve-week program in Applied Data Engineering with distinction.",
+  "signatory": { "name": "Dr. R. Menon", "title": "Program Director" },
+  "issue_date": "31 August 2026",
+  "references": [
+    { "label": "Certificate No", "value": "AIT-CE-8841" },
+    { "label": "Verify at", "value": "verify.example.org/AIT-CE-8841" }
+  ]
+}

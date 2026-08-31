@@ -1,0 +1,9 @@
+{
+  "sender": { "name": "—", "address": [] },
+  "recipient": { "name": "—", "address": [] },
+  "date": "—",
+  "subject": null,
+  "salutation": "—",
+  "body": [],
+  "closing": "—"
+}
